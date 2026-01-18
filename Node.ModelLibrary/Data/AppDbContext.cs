@@ -40,7 +40,7 @@ namespace Node.ModelLibrary.Data
                 }
             }
 
-            //Match relationships
+           
             builder.Entity<Match>()
                .HasOne(m => m.UserA)
                .WithMany()

@@ -1,12 +1,22 @@
 ﻿<Window x:Class="Node.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Node.WPF"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Node" Height="600" Width="1000">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
+        <!-- Left menu -->
+        <StackPanel Background="#1E1E1E">
+            <Button Content="Home" Command="{Binding ShowHomeCommand}" Margin="10"/>
+            <Button Content="Profile" Command="{Binding ShowProfileCommand}" Margin="10"/>
+            <Button Content="Messages" Command="{Binding ShowMessagesCommand}" Margin="10"/>
+        </StackPanel>
+
+        <!-- Main content -->
+        <ContentControl Grid.Column="1"
+                        Content="{Binding CurrentView}"/>
     </Grid>
 </Window>

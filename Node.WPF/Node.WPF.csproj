@@ -18,8 +18,10 @@
     <Folder Include="Controls\" />
     <Folder Include="Themes\" />
     <Folder Include="Services\" />
-    <Folder Include="ViewModels\" />
-    <Folder Include="Views\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Node.ModelLibrary\Node.ModelLibrary.csproj" />
   </ItemGroup>
 
 </Project>

@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Node.WPF\Node.WPF.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="Seed\" />
   </ItemGroup>
 
