@@ -30,7 +30,7 @@ namespace Node.WPF.ViewModels
             ShowProfileCommand = new RelayCommand(() => CurrentView = new ProfileView());
             ShowMessagesCommand = new RelayCommand(() => CurrentView = new MessagesView());
 
-            CurrentView = new HomeView();
+            CurrentView = new RegisterView();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -17,17 +17,27 @@ namespace Node.ModelLibrary.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
+
         public DbSet<Profile> Profiles => Set<Profile>();
         public DbSet<Photo> Photos => Set<Photo>();
         public DbSet<Match> Matches => Set<Match>();
-        public DbSet<Message> Messages => Set<Message>();   
+        public DbSet<Message> Messages => Set<Message>();
 
-        protected override void OnModelCreating (ModelBuilder builder)
+        
+        public DbSet<AppUserLocal> AppUsersLocal => Set<AppUserLocal>();
+
+        protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+           
+            builder.Entity<AppUserLocal>()
+                .HasOne(u => u.Profile)
+                .WithOne(p => p.AppUserLocal)
+                .HasForeignKey<Profile>(p => p.AppUserLocalId);
+
             
             foreach (var entityType in builder.Model.GetEntityTypes())
-
             {
                 if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
                 {
@@ -40,12 +50,12 @@ namespace Node.ModelLibrary.Data
                 }
             }
 
-           
+            
             builder.Entity<Match>()
-               .HasOne(m => m.UserA)
-               .WithMany()
-               .HasForeignKey(m => m.UserAId)
-               .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(m => m.UserA)
+                .WithMany()
+                .HasForeignKey(m => m.UserAId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Match>()
                 .HasOne(m => m.UserB)
