@@ -1,22 +1,8 @@
 ﻿<Window x:Class="Node.WPF.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Node" Height="600" Width="1000">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+        Title="Node" Height="600" Width="900">
 
-        <!-- Left menu -->
-        <StackPanel Background="#1E1E1E">
-            <Button Content="Home" Command="{Binding ShowHomeCommand}" Margin="10"/>
-            <Button Content="Profile" Command="{Binding ShowProfileCommand}" Margin="10"/>
-            <Button Content="Messages" Command="{Binding ShowMessagesCommand}" Margin="10"/>
-        </StackPanel>
+    <ContentControl Content="{Binding CurrentViewModel}" />
 
-        <!-- Main content -->
-        <ContentControl Grid.Column="1"
-                        Content="{Binding CurrentView}"/>
-    </Grid>
 </Window>

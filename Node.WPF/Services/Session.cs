@@ -1,13 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Node.ModelLibrary.Identity;
 
 namespace Node.WPF.Services
 {
-    public static class Session
+    public class Session
     {
-        public static Guid? CurrentUserLocalId { get; set; }
+        public string? UserId { get; private set; }
+        public string? Email { get; private set; }
+        public string? DisplayName { get; private set; }
+
+        public bool IsAuthenticated => !string.IsNullOrWhiteSpace(UserId);
+
+        public void SignIn(AppUser user)
+        {
+            UserId = user.Id;
+            Email = user.Email;
+            DisplayName = user.DisplayName;
+        }
+
+        public void SignOut()
+        {
+            UserId = null;
+            Email = null;
+            DisplayName = null;
+        }
     }
 }

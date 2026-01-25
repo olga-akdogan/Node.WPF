@@ -1,9 +1,29 @@
 ﻿<Application x:Class="Node.WPF.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Node.WPF"
-             StartupUri="MainWindow.xaml">
+             xmlns:vm="clr-namespace:Node.WPF.ViewModels"
+             xmlns:views="clr-namespace:Node.WPF.Views">
     <Application.Resources>
-         
+
+        <DataTemplate DataType="{x:Type vm:HomeViewModel}">
+            <views:HomeView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:LoginViewModel}">
+            <views:LoginView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:RegisterViewModel}">
+            <views:RegisterView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:BirthDataViewModel}">
+            <views:BirthDataView />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:ProfileViewModel}">
+            <views:ProfileView />
+        </DataTemplate>
+
     </Application.Resources>
 </Application>

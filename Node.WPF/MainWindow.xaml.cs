@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using Node.WPF.ViewModels;
 
 namespace Node.WPF
 {
@@ -8,7 +7,7 @@ namespace Node.WPF
         public MainWindow()
         {
             InitializeComponent();
-            DataContext = new MainViewModel();
         }
     }
 }
+

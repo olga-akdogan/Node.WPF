@@ -1,56 +1,72 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Node.ModelLibrary.Identity;   
-using Node.ModelLibrary.Models;
 using Node.ModelLibrary.Common;
-using System.Linq.Expressions;
+using Node.ModelLibrary.Identity;
+using Node.ModelLibrary.Models;
 
 namespace Node.ModelLibrary.Data
 {
-    public class AppDbContext : IdentityDbContext<AppUser>
+    public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
-        }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Profile> Profiles => Set<Profile>();
         public DbSet<Photo> Photos => Set<Photo>();
         public DbSet<Match> Matches => Set<Match>();
         public DbSet<Message> Messages => Set<Message>();
-
-        
-        public DbSet<AppUserLocal> AppUsersLocal => Set<AppUserLocal>();
+        public DbSet<BirthLocation> BirthLocations => Set<BirthLocation>();
+        public DbSet<NatalChart> NatalCharts => Set<NatalChart>();
+        public DbSet<Conversation> Conversations => Set<Conversation>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
            
-            builder.Entity<AppUserLocal>()
+            ConfigureBaseEntityDefaults(builder);
+
+           
+            builder.Entity<AppUser>()
                 .HasOne(u => u.Profile)
-                .WithOne(p => p.AppUserLocal)
-                .HasForeignKey<Profile>(p => p.AppUserLocalId);
+                .WithOne(p => p.AppUser)
+                .HasForeignKey<Profile>(p => p.AppUserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            
-            foreach (var entityType in builder.Model.GetEntityTypes())
-            {
-                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
-                {
-                    var parameter = Expression.Parameter(entityType.ClrType, "e");
-                    var isDeletedProp = Expression.Property(parameter, nameof(BaseEntity.IsDeleted));
-                    var compare = Expression.Equal(isDeletedProp, Expression.Constant(false));
-                    var lambda = Expression.Lambda(compare, parameter);
+          
+            builder.Entity<Profile>()
+                .HasIndex(p => p.AppUserId)
+                .IsUnique();
 
-                    builder.Entity(entityType.ClrType).HasQueryFilter(lambda);
-                }
-            }
+         
+            builder.Entity<Profile>()
+                .HasOne(p => p.BirthLocation)
+                .WithOne(bl => bl.Profile)
+                .HasForeignKey<BirthLocation>(bl => bl.ProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            
+        
+            builder.Entity<Profile>()
+                .HasOne(p => p.NatalChart)
+                .WithOne(c => c.Profile)
+                .HasForeignKey<NatalChart>(c => c.ProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+          
+            builder.Entity<Match>()
+                .HasOne(m => m.Conversation)
+                .WithOne(c => c.Match)
+                .HasForeignKey<Conversation>(c => c.MatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+          
+            builder.Entity<Message>()
+                .HasOne(m => m.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+          
             builder.Entity<Match>()
                 .HasOne(m => m.UserA)
                 .WithMany()
@@ -62,6 +78,22 @@ namespace Node.ModelLibrary.Data
                 .WithMany()
                 .HasForeignKey(m => m.UserBId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+         
+        }
+
+        private static void ConfigureBaseEntityDefaults(ModelBuilder builder)
+        {
+          
+            builder.Entity<Profile>().Property(e => e.IsDeleted).HasDefaultValue(false);
+            builder.Entity<BirthLocation>().Property(e => e.IsDeleted).HasDefaultValue(false);
+            builder.Entity<NatalChart>().Property(e => e.IsDeleted).HasDefaultValue(false);
+            builder.Entity<Photo>().Property(e => e.IsDeleted).HasDefaultValue(false);
+            builder.Entity<Match>().Property(e => e.IsDeleted).HasDefaultValue(false);
+            builder.Entity<Message>().Property(e => e.IsDeleted).HasDefaultValue(false);
+            builder.Entity<Conversation>().Property(e => e.IsDeleted).HasDefaultValue(false);
+
+            
         }
     }
 }

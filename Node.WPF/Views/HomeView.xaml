@@ -1,10 +1,60 @@
 ﻿<UserControl x:Class="Node.WPF.Views.HomeView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid>
-        <TextBlock Text="Home"
-                   FontSize="28"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"/>
+    <Grid Margin="32">
+        <StackPanel MaxWidth="700">
+
+            <TextBlock FontSize="28" Text="Dashboard" />
+            <TextBlock FontSize="16" Margin="0,6,0,0">
+<Run Text="Welcome, "/>
+<Run Text="{Binding DisplayName, Mode=OneWay}"/>
+<Run Text="!"/>
+            </TextBlock>
+            <TextBlock Foreground="Gray" Text="{Binding Email}" Margin="0,2,0,0"/>
+
+            <Border Margin="0,18,0,0" Padding="14" BorderThickness="1" BorderBrush="#DDD" CornerRadius="10">
+                <StackPanel>
+                    <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Refresh"
+                                Command="{Binding RefreshCommand}"
+                                Width="120" Margin="0,0,10,0"/>
+
+                        <Button Content="Birth data"
+                                Command="{Binding GoBirthDataCommand}"
+                                Width="120" Margin="0,0,10,0"/>
+
+                        <Button Content="View profile"
+                                Command="{Binding GoProfileCommand}"
+                                Width="120"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Margin="0,18,0,0" Padding="14" BorderThickness="1" BorderBrush="#DDD" CornerRadius="10">
+                <StackPanel>
+                    <TextBlock FontSize="18" Text="Next steps" Margin="0,0,0,8"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="Profile: " FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding HasProfile}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="Natal chart: " FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding HasChart}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Love profile generation comes next (OpenAI)."
+                               Opacity="0.7" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <Button Content="Logout"
+                    Command="{Binding LogoutCommand}"
+                    Height="34" Margin="0,20,0,0" Width="120"/>
+
+        </StackPanel>
     </Grid>
 </UserControl>

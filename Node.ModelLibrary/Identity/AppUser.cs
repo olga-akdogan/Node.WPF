@@ -4,14 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
+using Node.ModelLibrary.Models;
 
 namespace Node.ModelLibrary.Identity
 {
     public class AppUser : IdentityUser
     {
-        public string DisplayName { get; set; } = string.Empty;
-        public bool IsBlocked { get; set; } = false;
+        public string DisplayName { get; set; } = "";
 
-        public virtual Models.Profile? Profile { get; set; }
+        public bool IsBlocked { get; set; }
+
+        public Profile? Profile { get; set; }
     }
 }
