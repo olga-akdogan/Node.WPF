@@ -38,9 +38,31 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                        <Button Content="Refresh" Command="{Binding RefreshCommand}" Width="140" Margin="0,0,10,0"/>
-                        <Button Content="Edit birth data" Command="{Binding EditBirthDataCommand}" Width="160"/>
+                        <Button Content="Refresh"
+                                Command="{Binding RefreshCommand}"
+                                Width="140"
+                                Margin="0,0,10,0"/>
+                        <Button Content="Edit birth data"
+                                Command="{Binding EditBirthDataCommand}"
+                                Width="160"/>
                     </StackPanel>
+
+                    <!-- AI Love Profile -->
+                    <TextBlock Text="AI Love Profile"
+                               FontSize="16"
+                               Margin="0,18,0,6"/>
+
+                    <Button Content="Generate AI Love Profile"
+                            Command="{Binding GenerateLoveProfileCommand}"
+                            Width="220"/>
+
+                    <TextBox Text="{Binding LoveProfileText}"
+                             Margin="0,10,0,0"
+                             Height="220"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             IsReadOnly="True"
+                             VerticalScrollBarVisibility="Auto"/>
                 </StackPanel>
             </Border>
 

@@ -1,61 +1,110 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Node.WPF.Services
 {
-    public sealed class OpenAiService
+    public sealed class OpenAIService
     {
         private readonly HttpClient _http;
-        private readonly string _apiKey;
-        private readonly string _model;
+        private readonly IConfiguration _config;
 
-        public OpenAiService(HttpClient http, string apiKey, string model = "gpt-4.1-mini")
+        public OpenAIService(HttpClient http, IConfiguration config)
         {
-            _http = http ?? throw new ArgumentNullException(nameof(http));
-            _apiKey = string.IsNullOrWhiteSpace(apiKey) ? throw new ArgumentException("OpenAI API key missing", nameof(apiKey)) : apiKey;
-            _model = string.IsNullOrWhiteSpace(model) ? "gpt-4.1-mini" : model;
+            _http = http;
+            _config = config;
+            _http.BaseAddress = new Uri("https://api.openai.com/v1/");
         }
 
-        public async Task<string> CreateLoveProfileAsync(string prompt, CancellationToken ct = default)
+        private void EnsureAuthHeader(string apiKey)
         {
-            using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+            if (_http.DefaultRequestHeaders.Authorization == null)
+            {
+                _http.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", apiKey);
+            }
+        }
+
+        public async Task<string> GenerateProfileSummaryAsync(string natalChartJson)
+        {
+            var apiKey = _config["OpenAI:ApiKey"];
+            var model = _config["OpenAI:Model"] ?? "gpt-4.1-mini";
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("Missing OpenAI:ApiKey. Set it via user-secrets.");
+
+            EnsureAuthHeader(apiKey);
 
             var body = new
             {
-                model = _model,
-                input = prompt,
-               
-                text = new { format = new { type = "text" } }
+                model,
+                messages = new object[]
+                {
+                    new { role = "system", content = "You are an astrology assistant. Use only the provided JSON." },
+                    new { role = "user", content = "Summarize this natal chart:\n\n" + natalChartJson }
+                },
+                temperature = 0.7
             };
 
-            req.Content = JsonContent.Create(body);
+            var json = JsonSerializer.Serialize(body);
+            using var resp = await _http.PostAsync(
+                "chat/completions",
+                new StringContent(json, Encoding.UTF8, "application/json"));
 
-            using var res = await _http.SendAsync(req, ct).ConfigureAwait(false);
-            var json = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            var respText = await resp.Content.ReadAsStringAsync();
+            resp.EnsureSuccessStatusCode();
 
-            if (!res.IsSuccessStatusCode)
-                throw new InvalidOperationException($"OpenAI error: {(int)res.StatusCode} {res.ReasonPhrase}\n{json}");
+            using var doc = JsonDocument.Parse(respText);
+            return doc.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString() ?? "";
+        }
 
-            using var doc = JsonDocument.Parse(json);
-            
-            var root = doc.RootElement;
+        public async Task<string> CreateLoveProfileAsync(
+            string prompt,
+            CancellationToken ct = default)
+        {
+            var apiKey = _config["OpenAI:ApiKey"];
+            var model = _config["OpenAI:Model"] ?? "gpt-4.1-mini";
 
-          
-            if (root.TryGetProperty("output", out var output) && output.GetArrayLength() > 0)
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("Missing OpenAI:ApiKey.");
+
+            EnsureAuthHeader(apiKey);
+
+            var body = new
             {
-                var content = output[0].GetProperty("content");
-                if (content.GetArrayLength() > 0 && content[0].TryGetProperty("text", out var text))
-                    return text.GetString() ?? "";
-            }
+                model,
+                messages = new object[]
+                {
+                    new { role = "system", content = "You are an astrology dating assistant." },
+                    new { role = "user", content = prompt }
+                },
+                temperature = 0.7
+            };
 
-           
-            return json;
+            var json = JsonSerializer.Serialize(body);
+            using var resp = await _http.PostAsync(
+                "chat/completions",
+                new StringContent(json, Encoding.UTF8, "application/json"),
+                ct);
+
+            var respText = await resp.Content.ReadAsStringAsync(ct);
+            resp.EnsureSuccessStatusCode();
+
+            using var doc = JsonDocument.Parse(respText);
+            return doc.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString() ?? "";
         }
     }
 }

@@ -6,7 +6,8 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-	</PropertyGroup>
+	  <UserSecretsId>c9606692-db4a-4e02-b5b8-653daae045f6</UserSecretsId>
+  </PropertyGroup>
 
 	<ItemGroup>
 	  <Compile Remove="Services\EphemerisClient.cs" />

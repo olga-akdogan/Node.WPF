@@ -3,14 +3,15 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Node.WPF.Services;
 
 namespace Node.WPF.Services
 {
     public sealed class LoveProfileService
     {
-        private readonly OpenAiService _openai;
+        private readonly OpenAIService _openai;
 
-        public LoveProfileService(OpenAiService openai)
+        public LoveProfileService(OpenAIService openai)
         {
             _openai = openai;
         }
@@ -35,17 +36,28 @@ namespace Node.WPF.Services
             sb.AppendLine("You are an astrologer writing a dating-app style love profile.");
             sb.AppendLine("Be warm, practical, specific. Keep it under 250 words.");
             sb.AppendLine("No medical/diagnostic claims. Avoid absolute predictions.");
+            sb.AppendLine("Use the natal chart JSON below for planetary placements and aspects. Do not invent data.");
+            sb.AppendLine("If a placement/aspect is missing, say it's missing and continue.");
             sb.AppendLine();
             sb.AppendLine($"Birth UTC: {p.BirthDateTimeUtc:O}");
             sb.AppendLine($"Birth place: {p.BirthPlace}");
             sb.AppendLine($"Lat/Lon: {p.BirthLatitude}, {p.BirthLongitude}");
             sb.AppendLine();
+
+
+            sb.AppendLine("NATAL CHART JSON (source: ephemeris):");
+            sb.AppendLine(p.NatalChart?.ChartJson ?? "{}");
+            sb.AppendLine();
+
+
             sb.AppendLine("Return EXACTLY these sections:");
             sb.AppendLine("1) Love vibe (3 bullets)");
             sb.AppendLine("2) What they need in a partner (3 bullets)");
             sb.AppendLine("3) Green flags they show (3 bullets)");
             sb.AppendLine("4) Red flags to watch (3 bullets, gentle)");
             sb.AppendLine("5) Best first-date ideas (5 bullets)");
+
+
             return sb.ToString();
         }
     }

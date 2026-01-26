@@ -26,20 +26,21 @@ namespace Node.WPF
             _host = Host.CreateDefaultBuilder()
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
-
                     config.SetBasePath(Directory.GetCurrentDirectory());
                     config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+                   
+                    config.AddUserSecrets<App>(optional: true);
                 })
                 .ConfigureServices((ctx, services) =>
                 {
-                  
+                    
                     var dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "node.db");
                     var connString = $"Data Source={dbPath}";
-
                     services.AddDbContext<AppDbContext>(opt => opt.UseSqlite(connString));
                     services.AddDbContextFactory<AppDbContext>(opt => opt.UseSqlite(connString));
 
-                    
+                   
                     services
                         .AddIdentityCore<AppUser>(options =>
                         {
@@ -52,7 +53,7 @@ namespace Node.WPF
                         .AddRoles<IdentityRole>()
                         .AddEntityFrameworkStores<AppDbContext>();
 
-                    
+            
                     services.AddHttpClient<EphemerisService>(client =>
                     {
                         var baseUrl = ctx.Configuration["Ephemeris:BaseUrl"] ?? "https://ephemeris.fyi/ephemeris/";
@@ -60,23 +61,18 @@ namespace Node.WPF
                         client.Timeout = TimeSpan.FromSeconds(20);
                     });
 
-                    services.AddHttpClient<GoogleGeocodingService>(http =>
+                    services.AddHttpClient<GoogleGeocodingService>(client =>
                     {
-                        http.Timeout = TimeSpan.FromSeconds(15);
-                    });
-
-                    services.AddHttpClient<OpenAiService>(http =>
-                    {
-                        http.Timeout = TimeSpan.FromSeconds(60);
-                    })
-                    .AddTypedClient((http, sp) =>
-                    {
-                        var apiKey = ctx.Configuration["OpenAI:ApiKey"] ?? "";
-                        var model = ctx.Configuration["OpenAI:Model"] ?? "gpt-4.1-mini";
-                        return new OpenAiService(http, apiKey, model);
+                        client.Timeout = TimeSpan.FromSeconds(15);
                     });
 
                     
+                    services.AddHttpClient<OpenAIService>(client =>
+                    {
+                        client.Timeout = TimeSpan.FromSeconds(60);
+                    });
+
+                   
                     services.AddSingleton<Session>();
                     services.AddSingleton<NavigationService>();
 
@@ -84,7 +80,7 @@ namespace Node.WPF
                     services.AddTransient<ChartService>();
                     services.AddTransient<LoveProfileService>();
 
-                    
+                
                     services.AddSingleton<MainViewModel>();
                     services.AddTransient<LoginViewModel>();
                     services.AddTransient<RegisterViewModel>();
@@ -92,14 +88,14 @@ namespace Node.WPF
                     services.AddTransient<HomeViewModel>();
                     services.AddTransient<ProfileViewModel>();
 
-                    
+               
                     services.AddSingleton<MainWindow>();
                 })
                 .Build();
 
             await _host.StartAsync();
 
-            
+           
             using (var scope = _host.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -111,7 +107,6 @@ namespace Node.WPF
                 await DbSeeder.SeedAsync(db, userManager, roleManager);
             }
 
-            
             var mainVm = _host.Services.GetRequiredService<MainViewModel>();
             mainVm.Start();
 

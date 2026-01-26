@@ -16,6 +16,7 @@ namespace Node.WPF.ViewModels
         private readonly IDbContextFactory<AppDbContext> _dbFactory;
         private readonly Session _session;
         private readonly NavigationService _nav;
+        private readonly LoveProfileService _loveProfileService;
 
         public string DisplayName => _session.DisplayName ?? "";
         public string Email => _session.Email ?? "";
@@ -24,14 +25,25 @@ namespace Node.WPF.ViewModels
         public bool IsBusy
         {
             get => _isBusy;
-            private set { if (_isBusy == value) return; _isBusy = value; OnPropertyChanged(); RaiseCommands(); }
+            private set
+            {
+                if (_isBusy == value) return;
+                _isBusy = value;
+                OnPropertyChanged();
+                RaiseCommands();
+            }
         }
 
         private string _statusText = "";
         public string StatusText
         {
             get => _statusText;
-            private set { if (_statusText == value) return; _statusText = value; OnPropertyChanged(); }
+            private set
+            {
+                if (_statusText == value) return;
+                _statusText = value;
+                OnPropertyChanged();
+            }
         }
 
         private Profile? _profile;
@@ -44,6 +56,7 @@ namespace Node.WPF.ViewModels
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(HasProfile));
                 OnPropertyChanged(nameof(HasChart));
+                GenerateLoveProfileCommand.RaiseCanExecuteChanged();
             }
         }
 
@@ -53,16 +66,95 @@ namespace Node.WPF.ViewModels
         public ICommand RefreshCommand { get; }
         public ICommand EditBirthDataCommand { get; }
 
-        public ProfileViewModel(IDbContextFactory<AppDbContext> dbFactory, Session session, NavigationService nav)
+        // --- AI Love Profile ---
+        private string _loveProfileText = "";
+        public string LoveProfileText
+        {
+            get => _loveProfileText;
+            set
+            {
+                if (_loveProfileText == value) return;
+                _loveProfileText = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _isGeneratingLoveProfile;
+        public bool IsGeneratingLoveProfile
+        {
+            get => _isGeneratingLoveProfile;
+            set
+            {
+                if (_isGeneratingLoveProfile == value) return;
+                _isGeneratingLoveProfile = value;
+                OnPropertyChanged();
+                GenerateLoveProfileCommand.RaiseCanExecuteChanged();
+            }
+        }
+
+        public RelayCommand GenerateLoveProfileCommand { get; }
+
+        public ProfileViewModel(
+            IDbContextFactory<AppDbContext> dbFactory,
+            Session session,
+            NavigationService nav,
+            LoveProfileService loveProfileService)
         {
             _dbFactory = dbFactory;
             _session = session;
             _nav = nav;
+            _loveProfileService = loveProfileService;
 
             RefreshCommand = new RelayCommand(() => _ = LoadAsync(), () => !IsBusy);
             EditBirthDataCommand = new RelayCommand(() => _nav.NavigateTo<BirthDataViewModel>(), () => !IsBusy);
 
+            GenerateLoveProfileCommand = new RelayCommand(
+                () => _ = GenerateLoveProfileAsync(),
+                () => CanGenerateLoveProfile());
+
             _ = LoadAsync();
+        }
+
+        private bool CanGenerateLoveProfile()
+        {
+            if (IsBusy) return false;
+            if (IsGeneratingLoveProfile) return false;
+            if (Profile == null) return false;
+
+            if (Profile.BirthDateTimeUtc == default) return false;
+            if (string.IsNullOrWhiteSpace(Profile.BirthPlace)) return false;
+
+            // Your model uses double (non-nullable), so validate ranges instead of HasValue.
+            if (Profile.BirthLatitude < -90 || Profile.BirthLatitude > 90) return false;
+            if (Profile.BirthLongitude < -180 || Profile.BirthLongitude > 180) return false;
+
+            return true;
+        }
+
+        private async Task GenerateLoveProfileAsync()
+        {
+            try
+            {
+                IsGeneratingLoveProfile = true;
+                LoveProfileText = "Generating…";
+
+                if (Profile == null)
+                {
+                    LoveProfileText = "No profile loaded.";
+                    return;
+                }
+
+                var text = await _loveProfileService.GenerateAsync(Profile);
+                LoveProfileText = text;
+            }
+            catch (Exception ex)
+            {
+                LoveProfileText = $"Error: {ex.Message}";
+            }
+            finally
+            {
+                IsGeneratingLoveProfile = false;
+            }
         }
 
         public async Task LoadAsync()
@@ -91,7 +183,7 @@ namespace Node.WPF.ViewModels
 
                 StatusText = Profile == null
                     ? "No profile yet. Complete your birth data."
-                    : "Loaded ";
+                    : "Loaded.";
             }
             catch (Exception ex)
             {
@@ -107,6 +199,7 @@ namespace Node.WPF.ViewModels
         {
             if (RefreshCommand is RelayCommand rc) rc.RaiseCanExecuteChanged();
             if (EditBirthDataCommand is RelayCommand ec) ec.RaiseCanExecuteChanged();
+            GenerateLoveProfileCommand.RaiseCanExecuteChanged();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
