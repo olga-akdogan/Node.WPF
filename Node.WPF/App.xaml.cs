@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Node.ModelLibrary.Data;
@@ -23,24 +24,25 @@ namespace Node.WPF
             base.OnStartup(e);
 
             _host = Host.CreateDefaultBuilder()
+                .ConfigureAppConfiguration((hostingContext, config) =>
+                {
+
+                    config.SetBasePath(Directory.GetCurrentDirectory());
+                    config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                })
                 .ConfigureServices((ctx, services) =>
                 {
-                    
+                  
                     var dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "node.db");
                     var connString = $"Data Source={dbPath}";
 
+                    services.AddDbContext<AppDbContext>(opt => opt.UseSqlite(connString));
+                    services.AddDbContextFactory<AppDbContext>(opt => opt.UseSqlite(connString));
 
-                    services.AddDbContext<AppDbContext>(opt =>
-                        opt.UseSqlite(connString));
-
-               
-                    services.AddDbContextFactory<AppDbContext>(opt =>
-                        opt.UseSqlite(connString));
-
+                    
                     services
                         .AddIdentityCore<AppUser>(options =>
                         {
-                            
                             options.Password.RequireDigit = false;
                             options.Password.RequireLowercase = false;
                             options.Password.RequireUppercase = false;
@@ -50,21 +52,22 @@ namespace Node.WPF
                         .AddRoles<IdentityRole>()
                         .AddEntityFrameworkStores<AppDbContext>();
 
-                  
-                    services.AddHttpClient<EphemerisClient>(c =>
+                    
+                    services.AddHttpClient<EphemerisService>(client =>
                     {
-                        c.BaseAddress = new Uri("https://ephemeris.fyi/");
-                        c.Timeout = TimeSpan.FromSeconds(15);
+                        var baseUrl = ctx.Configuration["Ephemeris:BaseUrl"] ?? "https://ephemeris.fyi/ephemeris/";
+                        client.BaseAddress = new Uri(baseUrl);
+                        client.Timeout = TimeSpan.FromSeconds(20);
                     });
 
-                    services.AddHttpClient<GoogleGeocodingService>(c =>
+                    services.AddHttpClient<GoogleGeocodingService>(http =>
                     {
-                        c.Timeout = TimeSpan.FromSeconds(15);
+                        http.Timeout = TimeSpan.FromSeconds(15);
                     });
 
-                    services.AddHttpClient<OpenAiService>(c =>
+                    services.AddHttpClient<OpenAiService>(http =>
                     {
-                        c.Timeout = TimeSpan.FromSeconds(60);
+                        http.Timeout = TimeSpan.FromSeconds(60);
                     })
                     .AddTypedClient((http, sp) =>
                     {
@@ -81,7 +84,7 @@ namespace Node.WPF
                     services.AddTransient<ChartService>();
                     services.AddTransient<LoveProfileService>();
 
-                  
+                    
                     services.AddSingleton<MainViewModel>();
                     services.AddTransient<LoginViewModel>();
                     services.AddTransient<RegisterViewModel>();
@@ -89,14 +92,14 @@ namespace Node.WPF
                     services.AddTransient<HomeViewModel>();
                     services.AddTransient<ProfileViewModel>();
 
-
+                    
                     services.AddSingleton<MainWindow>();
                 })
                 .Build();
 
             await _host.StartAsync();
 
-          
+            
             using (var scope = _host.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -108,9 +111,9 @@ namespace Node.WPF
                 await DbSeeder.SeedAsync(db, userManager, roleManager);
             }
 
-     
+            
             var mainVm = _host.Services.GetRequiredService<MainViewModel>();
-            mainVm.Start(); 
+            mainVm.Start();
 
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.DataContext = mainVm;

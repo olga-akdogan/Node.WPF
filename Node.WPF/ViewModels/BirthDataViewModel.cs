@@ -140,9 +140,7 @@ namespace Node.WPF.ViewModels
         {
             if (IsBusy) return;
 
-
             StatusText = "";
-
 
             if (!_session.IsAuthenticated || string.IsNullOrWhiteSpace(_session.UserId))
             {
@@ -150,95 +148,69 @@ namespace Node.WPF.ViewModels
                 return;
             }
 
-
             if (string.IsNullOrWhiteSpace(BirthPlace))
             {
                 StatusText = "Birth place is required.";
                 return;
             }
 
-
             IsBusy = true;
-
-
             try
             {
-              
                 StatusText = "Resolving location…";
                 var (lat, lng) = await _geo.GeocodeAsync(BirthPlace.Trim());
                 BirthLatitude = lat;
                 BirthLongitude = lng;
 
-
-              
-                StatusText = "Calculating chart…";
-                var (positions, aspects) = await _chartService.CalculateNatalChartAsync(
-                GetBirthDateTimeUtc(),
-                BirthLatitude,
-                BirthLongitude);
-
-
-                var chartJson = System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    generatedAtUtc = DateTime.UtcNow,
-                    birthDateTimeUtc = GetBirthDateTimeUtc(),
-                    latitude = BirthLatitude,
-                    longitude = BirthLongitude,
-                    positions = positions.RootElement,
-                    aspects = aspects.RootElement
-                });
-
-
-               
                 await using var db = await _dbFactory.CreateDbContextAsync();
-                var userId = _session.UserId!;
 
+                var userId = _session.UserId;
 
                 var profile = await db.Profiles
-                .IgnoreQueryFilters() // <-- IMPORTANT: avoids IsDeleted filter breaking updates
-                .Include(p => p.BirthLocation)
-                .Include(p => p.NatalChart)
-                .FirstOrDefaultAsync(p => p.AppUserId == userId);
-
+                    .Include(p => p.BirthLocation)
+                    .Include(p => p.NatalChart)
+                    .FirstOrDefaultAsync(p => p.AppUserId == userId);
 
                 if (profile == null)
                 {
-                    profile = new Profile { AppUserId = userId };
+                    profile = new Node.ModelLibrary.Models.Profile
+                    {
+                        AppUserId = userId,
+                        Bio = "",
+                        Hobbies = ""
+                    };
                     db.Profiles.Add(profile);
                 }
-
-
-               
-                profile.IsDeleted = false;
-                profile.DeleteAt = null;
-
 
                 profile.BirthDateTimeUtc = GetBirthDateTimeUtc();
                 profile.BirthPlace = BirthPlace.Trim();
                 profile.BirthLatitude = BirthLatitude;
                 profile.BirthLongitude = BirthLongitude;
 
+                if (profile.BirthLocation == null)
+                    profile.BirthLocation = new Node.ModelLibrary.Models.BirthLocation();
 
-                profile.BirthLocation ??= new BirthLocation();
                 profile.BirthLocation.PlaceName = profile.BirthPlace;
                 profile.BirthLocation.Latitude = profile.BirthLatitude;
                 profile.BirthLocation.Longitude = profile.BirthLongitude;
 
+                await db.SaveChangesAsync();
 
-                profile.NatalChart ??= new NatalChart();
-                profile.NatalChart.ChartJson = chartJson;
+                StatusText = "Calculating chart…";
+                var result = await _chartService.BuildNatalChartAsync(profile.BirthDateTimeUtc, profile.BirthLatitude, profile.BirthLongitude);
+
+                if (profile.NatalChart == null)
+                    profile.NatalChart = new Node.ModelLibrary.Models.NatalChart();
+
+                profile.NatalChart.ChartJson = result.ChartJson;
+                profile.NatalChart.SunLongitude = result.SunLongitude;
+                profile.NatalChart.MoonLongitude = result.MoonLongitude;
                 profile.NatalChart.CreatedAtUtc = DateTime.UtcNow;
-
 
                 await db.SaveChangesAsync();
 
-
-                StatusText = "Saved";
-                _nav.NavigateTo<HomeViewModel>();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                StatusText = "Database mismatch while saving. Please restart the app and try again.";
+                StatusText = "Saved + chart calculated ✅";
+                _nav.NavigateTo<ProfileViewModel>();
             }
             catch (Exception ex)
             {

@@ -24,21 +24,27 @@ namespace Node.WPF.ViewModels
         public bool IsBusy
         {
             get => _isBusy;
-            set { if (_isBusy == value) return; _isBusy = value; OnPropertyChanged(); }
+            private set { if (_isBusy == value) return; _isBusy = value; OnPropertyChanged(); RaiseCommands(); }
         }
 
         private string _statusText = "";
         public string StatusText
         {
             get => _statusText;
-            set { if (_statusText == value) return; _statusText = value; OnPropertyChanged(); }
+            private set { if (_statusText == value) return; _statusText = value; OnPropertyChanged(); }
         }
 
         private Profile? _profile;
         public Profile? Profile
         {
             get => _profile;
-            private set { _profile = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasProfile)); OnPropertyChanged(nameof(HasChart)); }
+            private set
+            {
+                _profile = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasProfile));
+                OnPropertyChanged(nameof(HasChart));
+            }
         }
 
         public bool HasProfile => Profile != null;
@@ -54,7 +60,7 @@ namespace Node.WPF.ViewModels
             _nav = nav;
 
             RefreshCommand = new RelayCommand(() => _ = LoadAsync(), () => !IsBusy);
-            EditBirthDataCommand = new RelayCommand(() => _nav.NavigateTo<BirthDataViewModel>());
+            EditBirthDataCommand = new RelayCommand(() => _nav.NavigateTo<BirthDataViewModel>(), () => !IsBusy);
 
             _ = LoadAsync();
         }
@@ -65,13 +71,14 @@ namespace Node.WPF.ViewModels
 
             if (!_session.IsAuthenticated || string.IsNullOrWhiteSpace(_session.UserId))
             {
-                StatusText = "Not logged in.";
                 Profile = null;
+                StatusText = "Not logged in.";
                 return;
             }
 
             IsBusy = true;
             StatusText = "Loading profile…";
+
             try
             {
                 await using var db = await _dbFactory.CreateDbContextAsync();
@@ -84,7 +91,7 @@ namespace Node.WPF.ViewModels
 
                 StatusText = Profile == null
                     ? "No profile yet. Complete your birth data."
-                    : "Loaded ✅";
+                    : "Loaded ";
             }
             catch (Exception ex)
             {
@@ -93,8 +100,13 @@ namespace Node.WPF.ViewModels
             finally
             {
                 IsBusy = false;
-                if (RefreshCommand is RelayCommand rc) rc.RaiseCanExecuteChanged();
             }
+        }
+
+        private void RaiseCommands()
+        {
+            if (RefreshCommand is RelayCommand rc) rc.RaiseCanExecuteChanged();
+            if (EditBirthDataCommand is RelayCommand ec) ec.RaiseCanExecuteChanged();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
