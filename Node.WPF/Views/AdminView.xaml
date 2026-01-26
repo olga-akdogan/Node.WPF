@@ -14,7 +14,6 @@
         </StackPanel>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,12">
-            <Button Content="Refresh" Command="{Binding RefreshCommand}" Width="120" Margin="0,0,10,0"/>
             <Button Content="Soft Delete" Command="{Binding SoftDeleteCommand}" Width="120" Margin="0,0,10,0"/>
             <Button Content="Restore" Command="{Binding RestoreCommand}" Width="120" Margin="0,0,10,0"/>
             <Button Content="Back" Command="{Binding BackCommand}" Width="120"/>
@@ -28,7 +27,7 @@
 
             <ListBox ItemsSource="{Binding Profiles}"
                      SelectedItem="{Binding SelectedProfile}"
-                     DisplayMemberPath="BirthPlace"
+                     DisplayMemberPath="AppUser.Email"
                      />
 
             <Border Grid.Column="1" Margin="12,0,0,0" BorderBrush="#DDD" BorderThickness="1" CornerRadius="10" Padding="12">

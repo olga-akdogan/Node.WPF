@@ -61,6 +61,13 @@
                              AcceptsReturn="True"
                              IsReadOnly="True"
                              VerticalScrollBarVisibility="Auto"/>
+                    <StackPanel Orientation="Horizontal"
+                                Margin="0,14,0,0"
+                                HorizontalAlignment="Center">
+                        <Button Content="Go back"
+                                Command="{Binding GoBackCommand}"
+                                Width="120"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

@@ -17,6 +17,7 @@ namespace Node.WPF.ViewModels
         private readonly Session _session;
         private readonly NavigationService _nav;
         private readonly LoveProfileService _loveProfileService;
+        private readonly AuthService _auth;
 
         public string DisplayName => _session.DisplayName ?? "";
         public string Email => _session.Email ?? "";
@@ -61,12 +62,18 @@ namespace Node.WPF.ViewModels
         }
 
         public bool HasProfile => Profile != null;
-        public bool HasChart => Profile?.NatalChart != null && !string.IsNullOrWhiteSpace(Profile.NatalChart.ChartJson);
 
+        public bool HasChart =>
+            Profile?.NatalChart != null &&
+            !string.IsNullOrWhiteSpace(Profile.NatalChart.ChartJson);
+
+        
         public ICommand RefreshCommand { get; }
         public ICommand EditBirthDataCommand { get; }
+        public ICommand GoBackCommand { get; }   
+        public ICommand LogoutCommand { get; }   
 
-        // --- AI Love Profile ---
+        
         private string _loveProfileText = "";
         public string LoveProfileText
         {
@@ -83,7 +90,7 @@ namespace Node.WPF.ViewModels
         public bool IsGeneratingLoveProfile
         {
             get => _isGeneratingLoveProfile;
-            set
+            private set
             {
                 if (_isGeneratingLoveProfile == value) return;
                 _isGeneratingLoveProfile = value;
@@ -98,15 +105,28 @@ namespace Node.WPF.ViewModels
             IDbContextFactory<AppDbContext> dbFactory,
             Session session,
             NavigationService nav,
-            LoveProfileService loveProfileService)
+            LoveProfileService loveProfileService,
+            AuthService auth)
         {
             _dbFactory = dbFactory;
             _session = session;
             _nav = nav;
             _loveProfileService = loveProfileService;
+            _auth = auth;
 
             RefreshCommand = new RelayCommand(() => _ = LoadAsync(), () => !IsBusy);
-            EditBirthDataCommand = new RelayCommand(() => _nav.NavigateTo<BirthDataViewModel>(), () => !IsBusy);
+
+            EditBirthDataCommand = new RelayCommand(
+                () => _nav.NavigateTo<BirthDataViewModel>(),
+                () => !IsBusy);
+
+            GoBackCommand = new RelayCommand(
+                () => _nav.NavigateTo<HomeViewModel>(),
+                () => !IsBusy);
+
+            LogoutCommand = new RelayCommand(
+                () => _auth.Logout(),
+                () => !IsBusy);
 
             GenerateLoveProfileCommand = new RelayCommand(
                 () => _ = GenerateLoveProfileAsync(),
@@ -124,7 +144,6 @@ namespace Node.WPF.ViewModels
             if (Profile.BirthDateTimeUtc == default) return false;
             if (string.IsNullOrWhiteSpace(Profile.BirthPlace)) return false;
 
-            // Your model uses double (non-nullable), so validate ranges instead of HasValue.
             if (Profile.BirthLatitude < -90 || Profile.BirthLatitude > 90) return false;
             if (Profile.BirthLongitude < -180 || Profile.BirthLongitude > 180) return false;
 
@@ -199,10 +218,14 @@ namespace Node.WPF.ViewModels
         {
             if (RefreshCommand is RelayCommand rc) rc.RaiseCanExecuteChanged();
             if (EditBirthDataCommand is RelayCommand ec) ec.RaiseCanExecuteChanged();
+            if (GoBackCommand is RelayCommand bc) bc.RaiseCanExecuteChanged();
+            if (LogoutCommand is RelayCommand lc) lc.RaiseCanExecuteChanged();
+
             GenerateLoveProfileCommand.RaiseCanExecuteChanged();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
         private void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
