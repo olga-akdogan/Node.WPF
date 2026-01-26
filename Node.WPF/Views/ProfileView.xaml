@@ -37,17 +37,15 @@
                         <TextBlock Text="{Binding HasChart}"/>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                        <Button Content="Refresh"
-                                Command="{Binding RefreshCommand}"
-                                Width="140"
-                                Margin="0,0,10,0"/>
+                    <StackPanel Orientation="Horizontal"
+                                Margin="0,14,0,0"
+                                HorizontalAlignment="Center">
                         <Button Content="Edit birth data"
                                 Command="{Binding EditBirthDataCommand}"
                                 Width="160"/>
                     </StackPanel>
 
-                    <!-- AI Love Profile -->
+
                     <TextBlock Text="AI Love Profile"
                                FontSize="16"
                                Margin="0,18,0,6"/>

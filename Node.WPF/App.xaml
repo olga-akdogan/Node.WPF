@@ -25,5 +25,9 @@
             <views:ProfileView />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type vm:AdminViewModel}">
+            <views:AdminView/>
+        </DataTemplate>
+
     </Application.Resources>
 </Application>

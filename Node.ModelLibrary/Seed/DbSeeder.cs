@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Node.ModelLibrary.Data;
 using Node.ModelLibrary.Identity;
 using Node.ModelLibrary.Models;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Node.ModelLibrary.Seed
 {
@@ -13,73 +16,52 @@ namespace Node.ModelLibrary.Seed
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager)
         {
+            
             await db.Database.EnsureCreatedAsync();
 
+            
+            await EnsureRoleAsync(roleManager, "Admin");
+            await EnsureRoleAsync(roleManager, "User");
 
-            string[] roles = { "Admin", "User" };
-            foreach (var r in roles)
-            {
-                if (!await roleManager.RoleExistsAsync(r))
-                    await roleManager.CreateAsync(new IdentityRole(r));
-            }
-
-          
+            
             const string adminEmail = "admin@node.local";
-            var admin = await userManager.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
+            var admin = await EnsureUserAsync(
+                userManager,
+                email: adminEmail,
+                displayName: "Admin",
+                password: "Admin123!");
 
-            if (admin == null)
+            await EnsureUserInRoleAsync(userManager, admin, "Admin");
+
+            
+            for (int i = 1; i <= 10; i++)
             {
-                admin = new AppUser
-                {
-                    UserName = adminEmail,
-                    Email = adminEmail,
-                    DisplayName = "Admin",
-                    IsBlocked = false
-                };
+                var email = $"user{i}@node.local";
+                var user = await EnsureUserAsync(
+                    userManager,
+                    email: email,
+                    displayName: $"User {i}",
+                    password: "User123!");
 
-                var createAdmin = await userManager.CreateAsync(admin, "Admin123!");
-                if (!createAdmin.Succeeded)
-                {
-                    var msg = string.Join("; ", createAdmin.Errors.Select(e => e.Description));
-                    throw new InvalidOperationException($"Failed to create admin: {msg}");
-                }
-
-                await userManager.AddToRoleAsync(admin, "Admin");
-            }
-
-          
-            var hasNonAdminUsers = await userManager.Users.AnyAsync(u => u.Email != adminEmail);
-            if (!hasNonAdminUsers)
-            {
-                for (int i = 1; i <= 10; i++)
-                {
-                    var email = $"user{i}@node.local";
-                    var user = new AppUser
-                    {
-                        UserName = email,
-                        Email = email,
-                        DisplayName = $"User {i}",
-                        IsBlocked = false
-                    };
-
-                    var createUser = await userManager.CreateAsync(user, "User123!");
-                    if (!createUser.Succeeded) continue;
-
-                    await userManager.AddToRoleAsync(user, "User");
-                }
+                await EnsureUserInRoleAsync(userManager, user, "User");
             }
 
             
-            var identityUsers = await userManager.Users
+            var users = await userManager.Users
                 .Where(u => u.Email != adminEmail)
                 .OrderBy(u => u.Email)
                 .Take(10)
                 .ToListAsync();
 
-            foreach (var u in identityUsers)
+            foreach (var u in users)
             {
-                var hasProfile = await db.Profiles.AnyAsync(p => p.AppUserId == u.Id);
-                if (hasProfile) continue;
+               
+                var existingProfile = await db.Profiles
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(p => p.AppUserId == u.Id);
+
+                if (existingProfile != null)
+                    continue;
 
                 var profile = new Profile
                 {
@@ -87,10 +69,13 @@ namespace Node.ModelLibrary.Seed
                     Bio = $"Hi, I am {u.DisplayName}.",
                     Hobbies = "Music, Travel, Coffee",
 
-                    BirthDateTimeUtc = DateTime.UtcNow.AddYears(-20).AddDays(-u.Email!.Length),
                     BirthPlace = "Brussels",
                     BirthLatitude = 50.8503,
                     BirthLongitude = 4.3517,
+
+                    
+                    BirthDateTimeUtc = new DateTime(1995, 01, 01, 12, 00, 00, DateTimeKind.Utc)
+                        .AddDays(u.Email?.Length ?? 0),
 
                     BirthLocation = new BirthLocation
                     {
@@ -112,46 +97,59 @@ namespace Node.ModelLibrary.Seed
             }
 
             await db.SaveChangesAsync();
+        }
 
-            
-            if (!await db.Matches.AnyAsync())
+        private static async Task EnsureRoleAsync(RoleManager<IdentityRole> roleManager, string roleName)
+        {
+            if (await roleManager.RoleExistsAsync(roleName)) return;
+
+            var result = await roleManager.CreateAsync(new IdentityRole(roleName));
+            if (!result.Succeeded)
             {
-                var demoUsers = await userManager.Users
-                    .Where(u => u.Email != adminEmail)
-                    .OrderBy(u => u.Email)
-                    .Take(6)
-                    .ToListAsync();
+                var msg = string.Join("; ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Failed to create role '{roleName}': {msg}");
+            }
+        }
 
-                if (demoUsers.Count >= 4)
-                {
-                    var m1 = new Match
-                    {
-                        UserAId = demoUsers[0].Id,
-                        UserBId = demoUsers[1].Id,
-                        Status = MatchStatus.Accepted,
-                        CompatibilityScore = 82.5,
-                        Conversation = new Conversation
-                        {
-                            CreatedAtUtc = DateTime.UtcNow,
-                            Messages = new List<Message>
-                            {
-                                new Message { Content = "Hey! Nice to match 🙂", SenderId = demoUsers[0].Id },
-                                new Message { Content = "Hi! Same here. How are you?", SenderId = demoUsers[1].Id }
-                            }
-                        }
-                    };
+        private static async Task<AppUser> EnsureUserAsync(
+            UserManager<AppUser> userManager,
+            string email,
+            string displayName,
+            string password)
+        {
+            var existing = await userManager.FindByEmailAsync(email);
+            if (existing != null) return existing;
 
-                    var m2 = new Match
-                    {
-                        UserAId = demoUsers[2].Id,
-                        UserBId = demoUsers[3].Id,
-                        Status = MatchStatus.Pending,
-                        CompatibilityScore = 64.0
-                    };
+            var user = new AppUser
+            {
+                UserName = email,
+                Email = email,
+                DisplayName = displayName,
+                IsBlocked = false
+            };
 
-                    db.Matches.AddRange(m1, m2);
-                    await db.SaveChangesAsync();
-                }
+            var result = await userManager.CreateAsync(user, password);
+            if (!result.Succeeded)
+            {
+                var msg = string.Join("; ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Failed to create user '{email}': {msg}");
+            }
+
+            return user;
+        }
+
+        private static async Task EnsureUserInRoleAsync(
+            UserManager<AppUser> userManager,
+            AppUser user,
+            string roleName)
+        {
+            if (await userManager.IsInRoleAsync(user, roleName)) return;
+
+            var result = await userManager.AddToRoleAsync(user, roleName);
+            if (!result.Succeeded)
+            {
+                var msg = string.Join("; ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Failed to add '{user.Email}' to role '{roleName}': {msg}");
             }
         }
     }

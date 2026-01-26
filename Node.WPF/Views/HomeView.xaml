@@ -6,9 +6,9 @@
 
             <TextBlock FontSize="28" Text="Dashboard" />
             <TextBlock FontSize="16" Margin="0,6,0,0">
-<Run Text="Welcome, "/>
-<Run Text="{Binding DisplayName, Mode=OneWay}"/>
-<Run Text="!"/>
+                <Run Text="👋 Hey, "/>
+                <Run Text="{Binding DisplayName, Mode=OneWay}"/>
+                <Run Text="!"/>
             </TextBlock>
             <TextBlock Foreground="Gray" Text="{Binding Email}" Margin="0,2,0,0"/>
 
@@ -17,17 +17,22 @@
                     <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,0,0,10"/>
 
                     <StackPanel Orientation="Horizontal">
-                        <Button Content="Refresh"
-                                Command="{Binding RefreshCommand}"
-                                Width="120" Margin="0,0,10,0"/>
 
                         <Button Content="Birth data"
                                 Command="{Binding GoBirthDataCommand}"
-                                Width="120" Margin="0,0,10,0"/>
+                                Width="120"
+                                Margin="0,0,10,0"/>
 
                         <Button Content="View profile"
                                 Command="{Binding GoProfileCommand}"
-                                Width="120"/>
+                                Width="120"
+                                Margin="0,0,10,0"/>
+
+                        <Button Content="Admin"
+                                Command="{Binding GoAdminCommand}"
+                                IsEnabled="{Binding IsAdmin}"
+                                Width="120"
+                                Margin="0,0,10,0"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -46,14 +51,17 @@
                         <TextBlock Text="{Binding HasChart}"/>
                     </StackPanel>
 
-                    <TextBlock Text="Love profile generation comes next (OpenAI)."
-                               Opacity="0.7" TextWrapping="Wrap"/>
+                    <TextBlock Text="Get to know your love profile 💞"
+                               Opacity="0.7"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 
             <Button Content="Logout"
                     Command="{Binding LogoutCommand}"
-                    Height="34" Margin="0,20,0,0" Width="120"/>
+                    Height="34"
+                    Margin="0,20,0,0"
+                    Width="120"/>
 
         </StackPanel>
     </Grid>

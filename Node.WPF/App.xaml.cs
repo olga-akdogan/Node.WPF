@@ -87,8 +87,9 @@ namespace Node.WPF
                     services.AddTransient<BirthDataViewModel>();
                     services.AddTransient<HomeViewModel>();
                     services.AddTransient<ProfileViewModel>();
+                    services.AddTransient<AdminViewModel>();
 
-               
+
                     services.AddSingleton<MainWindow>();
                 })
                 .Build();

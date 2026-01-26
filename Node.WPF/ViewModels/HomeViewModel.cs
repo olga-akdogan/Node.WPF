@@ -21,6 +21,8 @@ namespace Node.WPF.ViewModels
         public string Email => _session.Email ?? "";
         public bool IsAuthenticated => _session.IsAuthenticated;
 
+        public bool IsAdmin => _session.IsAdmin;
+
         private bool _isBusy;
         public bool IsBusy
         {
@@ -30,8 +32,7 @@ namespace Node.WPF.ViewModels
                 if (_isBusy == value) return;
                 _isBusy = value;
                 OnPropertyChanged();
-
-                if (RefreshCommand is RelayCommand rc) rc.RaiseCanExecuteChanged();
+                RaiseCommands();
             }
         }
 
@@ -46,14 +47,26 @@ namespace Node.WPF.ViewModels
         public bool HasProfile
         {
             get => _hasProfile;
-            private set { if (_hasProfile == value) return; _hasProfile = value; OnPropertyChanged(); OnPropertyChanged(nameof(NeedsBirthData)); }
+            private set
+            {
+                if (_hasProfile == value) return;
+                _hasProfile = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(NeedsBirthData));
+            }
         }
 
         private bool _hasChart;
         public bool HasChart
         {
             get => _hasChart;
-            private set { if (_hasChart == value) return; _hasChart = value; OnPropertyChanged(); OnPropertyChanged(nameof(NeedsBirthData)); }
+            private set
+            {
+                if (_hasChart == value) return;
+                _hasChart = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(NeedsBirthData));
+            }
         }
 
         public bool NeedsBirthData => !HasProfile || !HasChart;
@@ -63,7 +76,13 @@ namespace Node.WPF.ViewModels
         public ICommand GoBirthDataCommand { get; }
         public ICommand LogoutCommand { get; }
 
-        public HomeViewModel(Session session, AuthService auth, NavigationService nav, IDbContextFactory<AppDbContext> dbFactory)
+        public RelayCommand GoAdminCommand { get; }
+
+        public HomeViewModel(
+            Session session,
+            AuthService auth,
+            NavigationService nav,
+            IDbContextFactory<AppDbContext> dbFactory)
         {
             _session = session;
             _auth = auth;
@@ -75,6 +94,10 @@ namespace Node.WPF.ViewModels
             GoBirthDataCommand = new RelayCommand(() => _nav.NavigateTo<BirthDataViewModel>());
             LogoutCommand = new RelayCommand(Logout);
 
+            GoAdminCommand = new RelayCommand(
+                () => _nav.NavigateTo<AdminViewModel>(),
+                () => _session.IsAdmin);
+
             _ = LoadAsync();
         }
 
@@ -82,11 +105,15 @@ namespace Node.WPF.ViewModels
         {
             if (IsBusy) return;
 
+            
+            OnPropertyChanged(nameof(IsAdmin));
+
             if (!IsAuthenticated || string.IsNullOrWhiteSpace(_session.UserId))
             {
                 StatusText = "Not logged in.";
                 HasProfile = false;
                 HasChart = false;
+                RaiseCommands();
                 return;
             }
 
@@ -128,6 +155,12 @@ namespace Node.WPF.ViewModels
         {
             _auth.Logout();
             _nav.NavigateTo<LoginViewModel>();
+        }
+
+        private void RaiseCommands()
+        {
+            if (RefreshCommand is RelayCommand rc) rc.RaiseCanExecuteChanged();
+            GoAdminCommand.RaiseCanExecuteChanged();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

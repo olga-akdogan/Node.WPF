@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace Node.ModelLibrary.Common
 {
-    public abstract class BaseEntity
+    public abstract class BaseEntity : ISoftDelete
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public bool IsDeleted { get; set; } = false;
-        public DateTime? DeleteAt { get; set; } 
 
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeleteAt { get; set; }
     }
 }
