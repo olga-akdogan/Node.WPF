@@ -20,7 +20,7 @@ The app combines geolocation, ephemeris calculations, and AI-generated interpret
 
 ## APIs Used
 
-### 1Google Geocoding API
+### Google Geocoding API
 - Converts the user’s **birth place** into latitude and longitude
 - Ensures accurate geographic coordinates for astrological calculations
 
@@ -108,7 +108,8 @@ Actively extensible
 
 ---
 
-## Sources and References 
+## Sources and References
+- ChatGPT 5.2 for debugging 
 - WPF Documentation: https://docs.microsoft.com/en-us/dotnet/desktop/wpf/
 - ChatGPT API Documentation: https://platform.openai.com/docs/
 - Google Geocoding API Documentation: https://developers.google.com/maps/documentation/geocoding/overview
